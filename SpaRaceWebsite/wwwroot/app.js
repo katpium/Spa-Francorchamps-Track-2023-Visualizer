@@ -91,7 +91,7 @@ function scalePoint(point) {
     const scale = 0.95;
 
     //Move dot left/right
-    const offsetX = 9;
+    const offsetX = 6;
 
     //Move it up/down
     const offsetY = 3;
