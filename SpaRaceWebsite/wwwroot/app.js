@@ -32,6 +32,8 @@ const trackArea = document.getElementById("track-area");
 let locationData = []; // this list will store API data from /api/location
 let currentIndex = 0; // tell us which point is currently showing -> each time the dots move -> +1 index
 let intervalId = null; // stores animation timer -> if not running, NULL
+let holdIntervalId = null; //For the holding on the back/forward buttons
+let holdSpeed = 1; 
 
 let minX;
 let maxX;
@@ -85,14 +87,14 @@ function scalePoint(point) {
     // Add this to flip upside down
     screenY = trackHeight - screenY;
 
-    // Manual map alignment controls
-    const scale = 0.96;
+    // Manual dot alignment controls
+    const scale = 0.95;
 
-    //Move path left/right
-    const offsetX = 10;
+    //Move dot left/right
+    const offsetX = 9;
 
     //Move it up/down
-    const offsetY = 13;
+    const offsetY = 3;
 
     screenX = trackWidth / 2 + (screenX - trackWidth / 2) * scale + offsetX;
     screenY = trackHeight / 2 + (screenY - trackHeight / 2) * scale + offsetY;
@@ -107,23 +109,60 @@ function scalePoint(point) {
 //Each time it runs IT START FROM THE PREVIOUS POSITION
 function moveDot() {
     //Conditional: If there is not location -> return
-    if (locationData.length === 0){
-        return;
-    }
-
-    const point = locationData[currentIndex];
-    const scaledPoint = scalePoint(point);
-
-    dot.style.left = scaledPoint.x + "px";
-    dot.style.top = scaledPoint.y + "px";
-
-    statusText.textContent = `Point ${currentIndex + 1} of ${locationData.length}`;
+    showDtoAtCurrentIndex();
 
     currentIndex++;
 
     if (currentIndex >= locationData.length){ //If it exit the range -> return to start
         currentIndex = 0;
     }
+}
+
+//Need a function for showing the current point when holding the back/forward buttons
+function showDtoAtCurrentIndex() {
+
+    //Conditional: If there is not location -> return
+    if (locationData.length === 0){
+        return;
+    }
+    
+    if ( currentIndex < 0) {
+        currentIndex = 0;
+    }
+
+    const point = locationData[currentIndex];
+    const scaledPoint = scalePoint(point);
+    
+    dot.style.left = scaledPoint.x + "px";
+    dot.style.top = scaledPoint.y + "px";
+
+    statusText.textContent = `Point ${currentIndex + 1} of ${locationData.length}`;
+} 
+
+function startHolding (direction) {
+    stopHolding(); //Stop any previous holding interval
+
+    holdSpeed = 1;
+
+    holdIntervalId = setInterval(() => {
+        currentIndex += direction * holdSpeed;
+
+        showDotAtCurrentIndex();
+
+        holdSpeed++;
+
+        if (holdSpeed > 50) {
+            holdSpeed = 50;
+        }
+    }, 100);
+}
+
+function stopHolding() {
+    if (holdIntervalId !== null) {
+        clearInterval(holdIntervalId);
+        holdIntervalId = null;
+    }
+    holdSpeed = 1; //Reset speed when stop holding
 }
 
 playButton.addEventListener("click", () => { // when click do this !
@@ -142,4 +181,32 @@ pauseButton.addEventListener("click", () => {
 })
 
 loadLocationData();
+
+const backwardButton = document.getElementById("backward-button");
+const forwardButton = document.getElementById("forward-button");
+
+backwardButton.addEventListener("mousedown", () => {
+    startHolding(-1);
+});
+
+forwardButton.addEventListener("mousedown", () => {
+    startHolding(1);
+});
+
+backwardButton.addEventListener("mouseup", stopHolding);
+forwardButton.addEventListener("mouseup", stopHolding);
+
+backwardButton.addEventListener("mouseleave", stopHolding);
+forwardButton.addEventListener("mouseleave", stopHolding);
+
+backwardButton.addEventListener("touchstart", () => {
+    startHolding(-1);
+});
+
+forwardButton.addEventListener("touchstart", () => {
+    startHolding(1);
+});
+
+backwardButton.addEventListener("touchend", stopHolding);
+forwardButton.addEventListener("touchend", stopHolding);
 
